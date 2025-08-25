@@ -1,10 +1,9 @@
 import streamlit as st
 from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator
-from qiskit.quantum_info import DensityMatrix, partial_trace
+from qiskit.quantum_info import DensityMatrix, partial_trace, Statevector
 from qiskit.visualization import plot_bloch_multivector
 import matplotlib.pyplot as plt
-from qiskit_aer import AerSimulator
 
 import io
 
@@ -39,7 +38,13 @@ if st.button('Visualize quantum states'):
         for i in range(n):
             traced = partial_trace(dm_full, [j for j in range(n) if j != i])
             st.write(f"**Qubit {i}:**")
-            fig = plot_bloch_multivector(traced)
+            st.write(f"Purity of Qubit {i}: {traced.purity()}")
+            # Convert reduced density matrix to statevector if pure, else use as is
+            try:
+                sv = Statevector(traced)
+                fig = plot_bloch_multivector(sv)
+            except Exception:
+                fig = plot_bloch_multivector(traced)
             st.pyplot(fig)
     except Exception as e:
         st.error(f"Error: {str(e)}")
