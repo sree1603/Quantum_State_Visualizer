@@ -108,5 +108,3 @@ cx q[0],q[1];
             </div>
             """, unsafe_allow_html=True)
 
-if __name__ == "__main__":
-    app()

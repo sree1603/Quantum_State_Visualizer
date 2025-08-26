@@ -164,5 +164,3 @@ def app():
         except Exception as e:
             st.error(f"Error opening comic: {str(e)}")
 
-if __name__ == "__main__":
-    app()
