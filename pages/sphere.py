@@ -2,7 +2,7 @@ import streamlit.components.v1 as components
 import streamlit as st
 
 def show_glowing_sphere(height=800, with_about_text=True):
-    """Display a 3D glowing sphere using Three.js embedded HTML/JS with animation."""
+    """Display a 3D glowing sphere using Three.js embedded HTML/JS with animation (without Explore button)."""
     html_code = """
     <div style="display: flex; width: 100%; height: 100vh;">
         <div id="sphere-container" style="width:50%; height:100vh;"></div>
@@ -11,9 +11,6 @@ def show_glowing_sphere(height=800, with_about_text=True):
                 <h1 style="font-family: 'IBM Plex Sans', sans-serif; font-size: 2.5rem; margin-bottom: 2rem; color: #ffffff; font-weight: 600;">Welcome to Myriad</h1>
                 <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem; color: #f4f4f4;">Explore the quantum realm through interactive visualizations and engaging content.</p>
                 <p style="font-size: 1.1rem; line-height: 1.6; color: #f4f4f4;">Myriad brings quantum computing concepts to life with beautiful animations and intuitive interfaces.</p>
-                <div style="margin-top: 2rem;">
-                    <a href="/?page=visualization" style="display: inline-block; background-color: #0f62fe; color: white; text-decoration: none; padding: 0.8rem 1.5rem; font-weight: 500; border-radius: 0; transition: background-color 0.2s ease;">Explore Now</a>
-                </div>
             </div>
         </div>
     </div>
@@ -49,7 +46,7 @@ def show_glowing_sphere(height=800, with_about_text=True):
         const points = new THREE.Points(geometry, material);
         scene.add(points);
 
-        // Background & fog for glow - IBM inspired
+        // Background & fog for glow
         scene.background = new THREE.Color("#161616");
         scene.fog = new THREE.FogExp2("#161616", 0.05);
 
@@ -61,41 +58,37 @@ def show_glowing_sphere(height=800, with_about_text=True):
 
         // Initial position (center)
         points.position.x = 0;
-        
+
         // Animation variables
         let animationStarted = false;
         let animationProgress = 0;
         const animationDuration = 120; // frames
-        
+
         // Animation
         function animate() {
             requestAnimationFrame(animate);
-            
+
             // Rotate the sphere
             points.rotation.y += 0.002;
             points.rotation.x += 0.001;
-            
-            // Start animation after 1 second
+
             if (!animationStarted) {
                 setTimeout(() => {
                     animationStarted = true;
                 }, 1000);
             }
-            
-            // Animate sphere position from center to left
+
             if (animationStarted && animationProgress < animationDuration) {
                 animationProgress++;
                 const progress = animationProgress / animationDuration;
-                
-                // Move sphere to the left (center of left half)
+
                 points.position.x = -2.5 * progress;
-                
-                // Show about text when animation is complete
+
                 if (progress >= 0.9) {
                     document.getElementById("about-text").style.opacity = "1";
                 }
             }
-            
+
             renderer.render(scene, camera);
         }
         animate();
@@ -110,8 +103,8 @@ def show_glowing_sphere(height=800, with_about_text=True):
     </script>
     """
     components.html(html_code, height=height, scrolling=False)
-    
-    # Add additional about text if needed (for mobile or alternative layouts)
+
+    # Optional mobile version (also without the button)
     if with_about_text:
         st.markdown("""
         <style>
@@ -125,6 +118,5 @@ def show_glowing_sphere(height=800, with_about_text=True):
         <div id="about-text-mobile" style="padding: 1.5rem; margin-top: 1.5rem; background-color: #262626;">
             <h2 style="font-family: 'IBM Plex Sans', sans-serif; font-size: 1.8rem; margin-bottom: 1rem; font-weight: 600;">Welcome to Myriad</h2>
             <p style="font-family: 'IBM Plex Sans', sans-serif; font-size: 1rem; line-height: 1.5; margin-bottom: 1.5rem;">Explore the quantum realm through interactive visualizations and engaging content.</p>
-            <a href="/?page=visualization" style="display: inline-block; background-color: #0f62fe; color: white; text-decoration: none; padding: 0.7rem 1.2rem; font-weight: 500; font-family: 'IBM Plex Sans', sans-serif;">Explore Now</a>
         </div>
         """, unsafe_allow_html=True)
