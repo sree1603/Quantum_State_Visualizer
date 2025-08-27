@@ -43,6 +43,11 @@ def app():
             background: url("https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2071&q=80");
             background-size: cover;
         }
+        /* Force placeholder buttons (initial H) to be black */
+        .stButton>button {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+            color: white !important;
+        }
 
         /* Main content area */
         .main .block-container {
@@ -118,8 +123,8 @@ def app():
         if is_bell_state:
             return "entangled", "entangled"
 
-        prob_q0_is_0 = np.abs(statevector[0])**2 + np.abs(statevector[1])**2
-        prob_q1_is_0 = np.abs(statevector[0])**2 + np.abs(statevector[2])**2
+        prob_q0_is_0 = np.abs(statevector[0])*2 + np.abs(statevector[1])*2
+        prob_q1_is_0 = np.abs(statevector[0])*2 + np.abs(statevector[2])*2
         
         q0_state = "superposition" if 0.01 < prob_q0_is_0 < 0.99 else "idle"
         q1_state = "superposition" if 0.01 < prob_q1_is_0 < 0.99 else "idle"
@@ -211,13 +216,13 @@ def app():
             st.markdown("<h4>Idle State</h4>", unsafe_allow_html=True)
             if lottie_animations["idle"]:
                 st_lottie(lottie_animations["idle"], height=150, key="showcase_idle")
-            st.info("The Citizen is in a definite state, either **0** or **1**. It's resting and waiting for a command.")
+            st.info("The Citizen is in a definite state, either *0* or *1*. It's resting and waiting for a command.")
 
         with col2:
             st.markdown("<h4>Superposition</h4>", unsafe_allow_html=True)
             if lottie_animations["superposition"]:
                 st_lottie(lottie_animations["superposition"], height=150, key="showcase_superposition")
-            st.info("The Citizen is in a mix of both **0 and 1** at the same time, like a spinning coin before it lands.")
+            st.info("The Citizen is in a mix of both *0 and 1* at the same time, like a spinning coin before it lands.")
             
         with col3:
             st.markdown("<h4>Entangled State</h4>", unsafe_allow_html=True)
@@ -240,16 +245,17 @@ def app():
             for j, col in enumerate(grid_cols):
                 with col:
                     gate_q0 = st.session_state.circuit_grid[0][j]
-                    label_q0 = gate_q0.replace('_C', '●').replace('_T', '⊕') if gate_q0 else " "
+                    label_q0 = gate_q0.replace('_C', '●').replace('_T', '⊕') if gate_q0 else "H"
                     if st.button(label_q0, key=f'btn_0_{j}', use_container_width=True):
                         st.session_state.circuit_grid[0][j] = st.session_state.selected_gate if not gate_q0 else None
                         st.rerun()
-                        
+
                     gate_q1 = st.session_state.circuit_grid[1][j]
-                    label_q1 = gate_q1.replace('_C', '●').replace('_T', '⊕') if gate_q1 else " "
+                    label_q1 = gate_q1.replace('_C', '●').replace('_T', '⊕') if gate_q1 else "H"
                     if st.button(label_q1, key=f'btn_1_{j}', use_container_width=True):
                         st.session_state.circuit_grid[1][j] = st.session_state.selected_gate if not gate_q1 else None
                         st.rerun()
+
 
                     is_cnot_pair = (gate_q0 == 'CNOT_C' and gate_q1 == 'CNOT_T') or \
                                    (gate_q0 == 'CNOT_T' and gate_q1 == 'CNOT_C')
@@ -264,21 +270,21 @@ def app():
             viz_col1, viz_col2 = st.columns(2)
             
             with viz_col1:
-                st.write("**Citizen Q0**")
+                st.write("*Citizen Q0*")
                 anim = lottie_animations.get(q0_state)
                 if anim:
                     st_lottie(anim, height=150, key=f"lottie_q0_{q0_state}")
-                st.write(f"State: `{q0_state.capitalize()}`")
+                st.write(f"State: {q0_state.capitalize()}")
 
             with viz_col2:
-                st.write("**Citizen Q1**")
+                st.write("*Citizen Q1*")
                 anim = lottie_animations.get(q1_state)
                 if anim:
                     st_lottie(anim, height=150, key=f"lottie_q1_{q1_state}")
-                st.write(f"State: `{q1_state.capitalize()}`")
+                st.write(f"State: {q1_state.capitalize()}")
             
             st.markdown("---")
-            st.write("**Combined State Analysis (Bloch Spheres)**")
+            st.write("*Combined State Analysis (Bloch Spheres)*")
             st.pyplot(bloch_fig)
 
         st.markdown('</div>', unsafe_allow_html=True)
