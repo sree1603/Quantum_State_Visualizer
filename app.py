@@ -250,11 +250,137 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+
+# --- NEW HOME PAGE FUNCTION ---
+def show_home_page():
+    """
+    Displays the main home page content, including the new
+    infinitely scrolling card section and the glowing sphere.
+    """
+    st.markdown("""
+    <style>
+        @keyframes scroll-horizontal {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .scroller-container {
+            overflow: hidden;
+            padding: 2rem 0;
+            background: #161616;
+            -webkit-mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
+            mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
+        }
+        .scroller-inner {
+            display: flex;
+            gap: 1.5rem;
+            width: max-content;
+            animation: scroll-horizontal 40s linear infinite;
+        }
+        .scroller-container:hover .scroller-inner {
+            animation-play-state: paused;
+        }
+        .milestone-card {
+            background-color: #262626;
+            border-radius: 12px;
+            padding: 1.5rem;
+            width: 350px;
+            border: 1px solid #393939;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .milestone-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 25px rgba(15, 98, 254, 0.2);
+            border-color: #0f62fe;
+        }
+        .milestone-card h3 {
+            font-size: 1.25rem;
+            color: #ffffff;
+            margin-top: 0;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+        }
+        .milestone-card h3 span {
+            font-size: 1.8rem;
+            margin-right: 0.75rem;
+            color: #0f62fe;
+        }
+        .milestone-card p {
+            font-size: 0.95rem;
+            color: #c6c6c6;
+            line-height: 1.6;
+            flex-grow: 1; /* Pushes the link to the bottom */
+        }
+        .milestone-card a {
+            color: #0f62fe;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 1rem;
+            display: inline-block;
+        }
+        .milestone-card a:hover {
+            text-decoration: underline;
+        }
+        .home-title {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #f4f4f4;
+        }
+        .home-subtitle {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 2rem auto;
+            color: #c6c6c6;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<h2 class='home-title'>From Theory to Reality: The Quantum Revolution</h2>", unsafe_allow_html=True)
+    st.markdown("<p class='home-subtitle'>Quantum computing isn't just a futuristic dream—it's a rapidly evolving field with groundbreaking achievements and world-changing applications. Explore some of the key milestones that are paving the way for the future of computation.</p>", unsafe_allow_html=True)
+
+    # --- Card Data ---
+    # Each tuple: (Emoji, Title, Description, URL)
+    cards_data = [
+        ("🏆", "Quantum Supremacy", "In 2019, Google claimed to have built a quantum computer that performed a calculation in 200 seconds that would take the world's fastest supercomputer 10,000 years. This was a major demonstration of potential.", "https://www.forbes.com/sites/bernardmarr/2023/07/28/the-race-for-quantum-supremacy-whos-leading-the-pack-in-2023/"),
+        ("💊", "Drug Discovery", "Quantum computers can simulate molecules with incredible precision, a task impossible for classical machines. This is accelerating the discovery of new medicines and materials, revolutionizing healthcare.", "https://www.forbes.com/councils/forbesbusinessdevelopmentcouncil/2024/10/15/how-quantum-computing-is-accelerating-drug-discovery-and-development/"),
+        ("🔒", "Shor's Algorithm", "In 1994, Peter Shor developed a quantum algorithm that could, in principle, break most of the encryption we use today. This discovery ignited the race to build both quantum computers and quantum-safe cryptography.", "https://en.wikipedia.org/wiki/Shor%27s_algorithm"),
+        ("📈", "Financial Modeling", "The world of finance is filled with complex optimization problems. Quantum computing promises to deliver more accurate risk models, optimized trading strategies, and new financial instruments.", "https://www.ibm.com/thought-leadership/institute-business-value/en-us/report/exploring-quantum-financial"),
+        ("🛠️", "Error Correction", "Qubits are fragile. A huge breakthrough is the development of quantum error correction codes, which protect quantum information from noise, making large-scale, fault-tolerant quantum computers a real possibility.", "https://www.livescience.com/technology/computing/scientists-make-magic-state-breakthrough-after-20-years-without-it-quantum-computers-can-never-be-truly-useful"),
+        ("⚛️", "Single-Atom Control", "Recent breakthroughs allow scientists to entangle the vibrations within a single atom, creating powerful logic gates. This reduces the number of physical qubits needed, paving the way for more efficient quantum machines.", "https://scitechdaily.com/scientists-unlock-quantum-computing-power-by-entangling-vibrations-in-a-single-atom/")
+    ]
+    
+    # --- HTML for Scroller ---
+    # Duplicate the cards to create a seamless loop
+    card_html_items = ""
+    for emoji, title, desc, url in cards_data * 2:
+        card_html_items += f"""
+        <div class="milestone-card">
+            <h3><span>{emoji}</span>{title}</h3>
+            <p>{desc}</p>
+            <a href="{url}" target="_blank" rel="noopener noreferrer">Learn More &rarr;</a>
+        </div>
+        """
+
+    scroller_html = f"""
+    <div class="scroller-container">
+        <div class="scroller-inner">
+            {card_html_items}
+        </div>
+    </div>
+    """
+    
+    st.markdown(scroller_html, unsafe_allow_html=True)
+
+    # --- Show the original glowing sphere below the new section ---
+    show_glowing_sphere(height=800)
+
+
 # --- Page Routing ---
 # Display the appropriate page based on the 'page' query parameter
 if page == "visualization":
     visualization.app()
-# --- MODIFICATION: Add a route for the new Explorer page ---
 elif page == "explorer":
     explorer.app()
 elif page == "comics":
@@ -264,5 +390,5 @@ elif page == "realms":
 elif page == "contact":
     contact.app()
 else:
-    # Default to the Home page content
-    show_glowing_sphere(height=800)
+    # Default to the NEW Home page function
+    show_home_page()
