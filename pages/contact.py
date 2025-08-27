@@ -84,17 +84,14 @@ def app():
                 <label class="form-label" for="name">Name</label>
                 <input type="text" id="name" class="form-input" placeholder="Your name" required>
             </div>
-            
-            <div class="form-group">
+             <div class="form-group">
                 <label class="form-label" for="email">Email</label>
-                <input type="email" id="email" class="form-input" placeholder="your.email@example.com" required>
+                <input type="email" id="email" class="form-input" placeholder="n210249@rguktn.ac.in" required>
             </div>
-            
             <div class="form-group">
                 <label class="form-label" for="message">Message</label>
                 <textarea id="message" class="form-input form-textarea" placeholder="Your message here..." required></textarea>
             </div>
-            
             <button type="submit" class="submit-button">Send Message</button>
         </form>
         <div id="success-message" style="display: none;" class="success-message">
