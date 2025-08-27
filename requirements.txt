@@ -7,3 +7,4 @@ python-dotenv>=1.0.0
 numpy>=1.24.3
 streamlit-lottie>=0.0.5
 pylatexenc
+plotly==5.24.1
