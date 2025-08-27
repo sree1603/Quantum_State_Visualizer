@@ -4,7 +4,35 @@ from qiskit_aer import AerSimulator
 from qiskit.quantum_info import DensityMatrix, partial_trace, Statevector
 from qiskit.visualization import plot_bloch_multivector
 import matplotlib.pyplot as plt
-import io
+import numpy as np
+
+def get_short_explanation(traced_state):
+    """
+    Provides a short, rule-based explanation for a given qubit's state.
+    
+    Args:
+        traced_state (DensityMatrix): The reduced density matrix of a single qubit.
+    
+    Returns:
+        str: A short explanation string.
+    """
+    # Check if the state is pure
+    if traced_state.purity() > 1 - 1e-9:
+        # It's a pure state. Convert to a statevector for analysis.
+        sv = Statevector(traced_state).data
+        if np.allclose(sv, [1, 0]):
+            return "This qubit is in the **pure state |0⟩**. It's in a definite, classical state at the north pole of the Bloch sphere."
+        elif np.allclose(sv, [0, 1]):
+            return "This qubit is in the **pure state |1⟩**. It's in a definite, classical state at the south pole of the Bloch sphere."
+        elif np.allclose(sv, [1/np.sqrt(2), 1/np.sqrt(2)]):
+            return "This qubit is in a **pure superposition state |+⟩**. It has a 50/50 chance of being measured as |0⟩ or |1⟩."
+        else:
+            return "This qubit is in a **pure superposition state**. Its state is a combination of |0⟩ and |1⟩, located on the surface of the Bloch sphere."
+    else:
+        # It's a mixed state
+        return "This qubit is in a **mixed state**. It is entangled with other qubits in the system, causing its state vector to be **inside** the Bloch sphere."
+    
+    return "This qubit's state is being visualized on the Bloch sphere."
 
 def app():
     st.markdown("<h1 style='text-align: center; font-family: IBM Plex Sans, sans-serif; font-weight: 600; margin-bottom: 1.5rem;'>Quantum State Visualizer</h1>", unsafe_allow_html=True)
@@ -17,7 +45,6 @@ def app():
     </div>
     """, unsafe_allow_html=True)
 
-    # Demo circuit for first demo/testing
     demo_code = '''OPENQASM 2.0;
 include "qelib1.inc";
 qreg q[2];
@@ -50,9 +77,7 @@ cx q[0],q[1];
 
     if visualize_button:
         try:
-            # Show a loading animation
             with st.spinner("Calculating quantum states..."):
-                # Parse and simulate circuit
                 qc = QuantumCircuit.from_qasm_str(qasm_input)
                 qc.save_statevector()
                 simulator = AerSimulator(method='statevector')
@@ -61,20 +86,26 @@ cx q[0],q[1];
                 state = result.get_statevector(0)
                 dm_full = DensityMatrix(state)
 
-            # Display results in a nice layout
             st.markdown("<h2 style='text-align: center; margin-top: 2.5rem; font-family: IBM Plex Sans, sans-serif; font-weight: 600;'>Simulation Results</h2>", unsafe_allow_html=True)
             
-            # Circuit visualization
+            # --- Rule-Based Explanation ---
+            st.markdown("""
+            ---
+            <h2 style='text-align: left; margin-top: 2.5rem; font-family: IBM Plex Sans, sans-serif; font-weight: 300;'>Explanation</h2>
+            """, unsafe_allow_html=True)
+            
+            # This is the key part of the fix. Get the traced state and pass it to the function.
+            traced_dm = partial_trace(dm_full, [j for j in range(qc.num_qubits) if j != 0])
+            explanation = get_short_explanation(traced_dm)
+            st.info(explanation)
+            
             st.markdown(f"<h3 style='margin-top: 2rem; font-family: IBM Plex Sans, sans-serif; font-weight: 500; color: #f4f4f4; border-bottom: 1px solid #393939; padding-bottom: 0.5rem;'>Quantum Circuit ({qc.num_qubits} qubits)</h3>", unsafe_allow_html=True)
             
-            # Apply custom styling to the matplotlib figure
             fig = qc.draw('mpl', style={'backgroundcolor': '#0a1a1a', 'textcolor': '#E5E7EB'})
             st.pyplot(fig)
             
-            # Bloch spheres
             st.markdown(f"<h3 style='margin-top: 2.5rem; font-family: IBM Plex Sans, sans-serif; font-weight: 500; color: #f4f4f4; border-bottom: 1px solid #393939; padding-bottom: 0.5rem;'>Qubit States (Bloch Sphere Representation)</h3>", unsafe_allow_html=True)
             
-            # Create columns for Bloch spheres
             n = qc.num_qubits
             cols = st.columns(min(n, 3))
             
@@ -84,14 +115,12 @@ cx q[0],q[1];
                     st.markdown(f"<h4 style='text-align: center; font-family: IBM Plex Sans, sans-serif; font-weight: 500; color: #f4f4f4;'>Qubit {i}</h4>", unsafe_allow_html=True)
                     st.markdown(f"<p style='text-align: center; font-family: IBM Plex Sans, sans-serif; color: #0f62fe;'>Purity: {traced.purity():.4f}</p>", unsafe_allow_html=True)
                     
-                    # Convert reduced density matrix to statevector if pure, else use as is
                     try:
                         sv = Statevector(traced)
                         fig = plot_bloch_multivector(sv)
                     except Exception:
                         fig = plot_bloch_multivector(traced)
                     
-                    # Customize the figure
                     fig.patch.set_facecolor('#0a1a1a')
                     for ax in fig.get_axes():
                         ax.set_facecolor('#0a1a1a')
