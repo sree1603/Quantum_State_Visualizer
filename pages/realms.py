@@ -7,19 +7,20 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit_aer import Aer
 from qiskit.visualization import plot_bloch_multivector
+import matplotlib.pyplot as plt
 
-def app(): # 👈 WRAP EVERYTHING IN THIS FUNCTION
-    # --- Page Configuration ---
-    # This is now controlled by app.py, but we can set specific styles here if needed.
-    # st.set_page_config(...) # You can remove this line
-
+def app():
     # --- Asset Loading ---
+    @st.cache_data
     def load_lottieurl(url: str):
         """Helper function to load Lottie animation from URL."""
-        r = requests.get(url)
-        if r.status_code != 200:
+        try:
+            r = requests.get(url, timeout=10)
+            if r.status_code != 200:
+                return None
+            return r.json()
+        except requests.exceptions.RequestException:
             return None
-        return r.json()
 
     # Lottie animations for Quantum Citizens
     LOTTIE_URLS = {
@@ -30,10 +31,11 @@ def app(): # 👈 WRAP EVERYTHING IN THIS FUNCTION
     }
     lottie_animations = {name: load_lottieurl(url) for name, url in LOTTIE_URLS.items()}
 
-    # Placeholder for comic panel image
-    COMIC_URL = "https://placehold.co/800x300/0D1117/FFFFFF?text=Comic+Panel%0AProfessor+Qubit+and+the+Spooky+Link"
+    # Comic panel images
+    COMIC_URL_BRIEFING = "https://placehold.co/800x300/0D1117/FFFFFF?text=Comic+Panel%0AProfessor+Qubit+and+the+Spooky+Link"
+    COMIC_URL_SUCCESS = "https://placehold.co/800x300/0D1117/28A745?text=Mission+Complete!%0AThe+citizens+are+entangled!"
 
-    # --- Custom UI Styling (Inspired by modern game UI) ---
+    # --- Custom UI Styling ---
     st.markdown("""
     <style>
         /* Core App Styling */
@@ -44,84 +46,84 @@ def app(): # 👈 WRAP EVERYTHING IN THIS FUNCTION
 
         /* Main content area */
         .main .block-container {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-            padding-left: 5rem;
-            padding-right: 5rem;
+            padding-top: 2rem; padding-bottom: 2rem;
+            padding-left: 5rem; padding-right: 5rem;
         }
 
         /* Sidebar Styling */
-        .st-emotion-cache-16txtl3 {
+        [data-testid="stSidebar"] {
             background-color: rgba(13, 17, 23, 0.8);
             backdrop-filter: blur(10px);
             border-right: 1px solid #4A00E0;
         }
-        .st-emotion-cache-16txtl3 h1, .st-emotion-cache-16txtl3 .st-emotion-cache-1g8p3r6 {
-            color: #FFFFFF;
-            text-shadow: 0 0 10px #8E2DE2;
-        }
         
         /* Custom Buttons */
         .stButton>button {
-            border: 2px solid #8E2DE2;
-            border-radius: 10px;
-            color: white;
-            background-color: rgba(74, 0, 224, 0.3);
+            border: 2px solid #8E2DE2; border-radius: 10px;
+            color: white; background-color: rgba(74, 0, 224, 0.3);
             transition: all 0.3s ease-in-out;
             box-shadow: 0 0 15px rgba(142, 45, 226, 0.5);
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold; font-size: 1.2rem;
+            height: 4em; /* Ensure buttons have consistent height */
         }
         .stButton>button:hover {
-            background-color: #4A00E0;
-            border-color: #FFFFFF;
+            background-color: #4A00E0; border-color: #FFFFFF;
             box-shadow: 0 0 25px rgba(255, 255, 255, 0.7);
         }
-        .stButton>button:active {
-            background-color: #3c00b3 !important;
-        }
-
-        /* Custom Containers (for circuits, visualizations, etc.) */
+        
+        /* Custom Containers */
         .custom-container {
             background-color: rgba(13, 17, 23, 0.8);
-            backdrop-filter: blur(5px);
-            border: 1px solid #4A00E0;
-            border-radius: 15px;
-            padding: 2rem;
+            backdrop-filter: blur(5px); border: 1px solid #4A00E0;
+            border-radius: 15px; padding: 2rem;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
         
-        /* Expander for Comic Panel */
-        .st-emotion-cache-p5msec {
-            background-color: rgba(13, 17, 23, 0.9);
-            border-radius: 10px;
-            border: 1px solid #4A00E0;
-        }
-
         /* Typography */
-        h1, h2, h3 {
+        h1, h2, h3, h4 {
             color: #FFFFFF;
             text-shadow: 0 0 8px rgba(142, 45, 226, 0.8);
         }
+
+        /* CNOT Connector Line Style */
+        .cnot-line-container {
+            position: relative;
+            width: 100%;
+            height: 4em; /* Match button height */
+            margin-top: -4.5em; /* Pull up to align with buttons */
+            margin-bottom: -1em; /* Reduce space below */
+        }
+        .cnot-line {
+            position: absolute;
+            left: 50%;
+            top: 20%; /* Start below the top button */
+            bottom: 20%; /* End above the bottom button */
+            width: 4px;
+            background-color: #8E2DE2;
+            box-shadow: 0 0 10px #8E2DE2;
+            transform: translateX(-50%);
+        }
     </style>
     """, unsafe_allow_html=True)
-
 
     # --- Quantum Logic ---
     def get_state_label(statevector):
         """Determine the state of the qubits from the statevector."""
         is_bell_state = np.allclose(statevector, [1/np.sqrt(2), 0, 0, 1/np.sqrt(2)]) or \
-                          np.allclose(statevector, [0, 1/np.sqrt(2), 1/np.sqrt(2), 0])
+                        np.allclose(statevector, [0, 1/np.sqrt(2), 1/np.sqrt(2), 0]) or \
+                        np.allclose(statevector, [1/np.sqrt(2), 0, 0, -1/np.sqrt(2)]) or \
+                        np.allclose(statevector, [0, 1/np.sqrt(2), -1/np.sqrt(2), 0])
         
         if is_bell_state:
             return "entangled", "entangled"
 
         prob_q0_is_0 = np.abs(statevector[0])**2 + np.abs(statevector[1])**2
+        prob_q1_is_0 = np.abs(statevector[0])**2 + np.abs(statevector[2])**2
         
         q0_state = "superposition" if 0.01 < prob_q0_is_0 < 0.99 else "idle"
-        q1_state = "superposition" if 0.01 < (np.abs(statevector[0])**2 + np.abs(statevector[2])**2) < 0.99 else "idle"
-
-        if q0_state == "idle" and q1_state == "idle":
-            return "idle", "idle"
-            
+        q1_state = "superposition" if 0.01 < prob_q1_is_0 < 0.99 else "idle"
+        
         return q0_state, q1_state
 
     def run_circuit(circuit_grid):
@@ -131,16 +133,13 @@ def app(): # 👈 WRAP EVERYTHING IN THIS FUNCTION
 
         for step in range(num_steps):
             gate_q0 = circuit_grid[0][step]
-            if gate_q0 == 'H':
-                qc.h(0)
-            elif gate_q0 == 'X':
-                qc.x(0)
-            
             gate_q1 = circuit_grid[1][step]
-            if gate_q1 == 'H':
-                qc.h(1)
-            elif gate_q1 == 'X':
-                qc.x(1)
+
+            if gate_q0 == 'H': qc.h(0)
+            elif gate_q0 == 'X': qc.x(0)
+            
+            if gate_q1 == 'H': qc.h(1)
+            elif gate_q1 == 'X': qc.x(1)
 
             if gate_q0 == 'CNOT_C' and gate_q1 == 'CNOT_T':
                 qc.cx(0, 1)
@@ -149,12 +148,12 @@ def app(): # 👈 WRAP EVERYTHING IN THIS FUNCTION
             
             qc.barrier()
 
-        # Simulate and get the statevector
         simulator = Aer.get_backend('statevector_simulator')
-        job = simulator.run(qc) # Replace execute() with the simulator's run() method
-        result = job.result()   # Get the result from the job
+        job = simulator.run(qc)
+        result = job.result()
         statevector = result.get_statevector()
-                
+        
+        plt.close('all')
         bloch_fig = plot_bloch_multivector(statevector)
         
         q0_state, q1_state = get_state_label(statevector)
@@ -163,96 +162,138 @@ def app(): # 👈 WRAP EVERYTHING IN THIS FUNCTION
 
     # --- Session State Initialization ---
     if 'circuit_grid' not in st.session_state:
-        st.session_state.circuit_grid = [[None, None, None] for _ in range(2)]
+        st.session_state.circuit_grid = [[None] * 3 for _ in range(2)]
     if 'selected_gate' not in st.session_state:
-        st.session_state.selected_gate = None
+        st.session_state.selected_gate = 'H'
     if 'mission_complete' not in st.session_state:
         st.session_state.mission_complete = False
+    if 'comic_url' not in st.session_state:
+        st.session_state.comic_url = COMIC_URL_BRIEFING
 
     # --- UI Components ---
     with st.sidebar:
         st.markdown("<h1>Gate Palette</h1>", unsafe_allow_html=True)
-        st.markdown("Select a gate, then click on a slot in the circuit to place it.")
+        st.markdown("Select a gate, then click a slot to place it. Click a placed gate to remove it.")
         
-        if st.button("Hadamard (H)"):
-            st.session_state.selected_gate = 'H'
-        if st.button("Pauli-X (X)"):
-            st.session_state.selected_gate = 'X'
-        if st.button("CNOT (Control)"):
-            st.session_state.selected_gate = 'CNOT_C'
-        if st.button("CNOT (Target)"):
-            st.session_state.selected_gate = 'CNOT_T'
+        gate_options = {
+            "Hadamard (H)": "H",
+            "Pauli-X (X)": "X",
+            "CNOT (Control ●)": "CNOT_C",
+            "CNOT (Target ⊕)": "CNOT_T"
+        }
+        
+        selected_gate_label = st.radio(
+            "Available Gates",
+            options=gate_options.keys(),
+            index=0,
+            label_visibility="collapsed"
+        )
+        st.session_state.selected_gate = gate_options[selected_gate_label]
         
         st.markdown("---")
-        if st.button("Reset Circuit"):
-            st.session_state.circuit_grid = [[None, None, None] for _ in range(2)]
+        if st.button("Reset Circuit", use_container_width=True):
+            st.session_state.circuit_grid = [[None] * 3 for _ in range(2)]
             st.session_state.mission_complete = False
+            st.session_state.comic_url = COMIC_URL_BRIEFING
+            st.toast("Circuit has been reset!", icon="🧹")
             st.rerun()
-
-        st.markdown(f"**Selected Gate:** `{st.session_state.selected_gate}`")
 
     st.title("🌌 Quantum Realms: The State Architect")
     st.header("Mission 01: Create a Bell State")
 
-    with st.expander("📖 View Mission Briefing (Comic)"):
-        st.image(COMIC_URL, caption="Professor Qubit explains the spooky link between two particles.")
+    with st.expander("📖 View Mission Briefing (Comic)", expanded=True):
+        st.image(st.session_state.comic_url)
+        
+    # --- NEW: State Showcase ---
+    with st.expander("🔬 State Showcase: Meet the Quantum Citizens!", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("<h4>Idle State</h4>", unsafe_allow_html=True)
+            if lottie_animations["idle"]:
+                st_lottie(lottie_animations["idle"], height=150, key="showcase_idle")
+            st.info("The Citizen is in a definite state, either **0** or **1**. It's resting and waiting for a command.")
+
+        with col2:
+            st.markdown("<h4>Superposition</h4>", unsafe_allow_html=True)
+            if lottie_animations["superposition"]:
+                st_lottie(lottie_animations["superposition"], height=150, key="showcase_superposition")
+            st.info("The Citizen is in a mix of both **0 and 1** at the same time, like a spinning coin before it lands.")
+            
+        with col3:
+            st.markdown("<h4>Entangled State</h4>", unsafe_allow_html=True)
+            if lottie_animations["entangled"]:
+                st_lottie(lottie_animations["entangled"], height=150, key="showcase_entangled")
+            st.info("Two Citizens are spookily linked. Measuring one instantly determines the state of the other!")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # --- Interactive Circuit Builder ---
     with st.container():
         st.markdown('<div class="custom-container">', unsafe_allow_html=True)
         
-        col1, col2 = st.columns([2, 3])
+        c1, c2 = st.columns([2, 3])
 
-        with col1:
+        with c1:
             st.subheader("Quantum Circuit Canvas")
-            st.write("Construct a circuit to entangle the two Quantum Citizens.")
+            grid_cols = st.columns(len(st.session_state.circuit_grid[0]))
             
-            for i in range(2):
-                st.write(f"**Citizen Q{i}**")
-                cols = st.columns(len(st.session_state.circuit_grid[0]))
-                for j in range(len(st.session_state.circuit_grid[0])):
-                    with cols[j]:
-                        gate = st.session_state.circuit_grid[i][j]
-                        gate_label = gate.replace('_C', ' ●').replace('_T', ' ⊕') if gate else " "
-                        if st.button(gate_label, key=f'btn_{i}_{j}', use_container_width=True):
-                            st.session_state.circuit_grid[i][j] = st.session_state.selected_gate
-                            st.rerun()
+            for j, col in enumerate(grid_cols):
+                with col:
+                    gate_q0 = st.session_state.circuit_grid[0][j]
+                    label_q0 = gate_q0.replace('_C', '●').replace('_T', '⊕') if gate_q0 else " "
+                    if st.button(label_q0, key=f'btn_0_{j}', use_container_width=True):
+                        st.session_state.circuit_grid[0][j] = st.session_state.selected_gate if not gate_q0 else None
+                        st.rerun()
+                        
+                    gate_q1 = st.session_state.circuit_grid[1][j]
+                    label_q1 = gate_q1.replace('_C', '●').replace('_T', '⊕') if gate_q1 else " "
+                    if st.button(label_q1, key=f'btn_1_{j}', use_container_width=True):
+                        st.session_state.circuit_grid[1][j] = st.session_state.selected_gate if not gate_q1 else None
+                        st.rerun()
+
+                    is_cnot_pair = (gate_q0 == 'CNOT_C' and gate_q1 == 'CNOT_T') or \
+                                   (gate_q0 == 'CNOT_T' and gate_q1 == 'CNOT_C')
+                    if is_cnot_pair:
+                        st.markdown('<div class="cnot-line-container"><div class="cnot-line"></div></div>', unsafe_allow_html=True)
 
         statevector, bloch_fig, q0_state, q1_state = run_circuit(st.session_state.circuit_grid)
 
-        with col2:
+        with c2:
             st.subheader("Real-Time Visualization")
             
             viz_col1, viz_col2 = st.columns(2)
             
             with viz_col1:
                 st.write("**Citizen Q0**")
-                animation_key = q0_state
-                if lottie_animations[animation_key]:
-                    st_lottie(lottie_animations[animation_key], height=150, key=f"lottie_q0_{animation_key}")
+                anim = lottie_animations.get(q0_state)
+                if anim:
+                    st_lottie(anim, height=150, key=f"lottie_q0_{q0_state}")
                 st.write(f"State: `{q0_state.capitalize()}`")
 
             with viz_col2:
                 st.write("**Citizen Q1**")
-                animation_key = q1_state
-                if lottie_animations[animation_key]:
-                    st_lottie(lottie_animations[animation_key], height=150, key=f"lottie_q1_{animation_key}")
+                anim = lottie_animations.get(q1_state)
+                if anim:
+                    st_lottie(anim, height=150, key=f"lottie_q1_{q1_state}")
                 st.write(f"State: `{q1_state.capitalize()}`")
-                
+            
             st.markdown("---")
-            st.write("**Combined State Analysis**")
+            st.write("**Combined State Analysis (Bloch Spheres)**")
             st.pyplot(bloch_fig)
 
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # --- Mission Completion Logic ---
     target_bell_state = np.array([1/np.sqrt(2), 0, 0, 1/np.sqrt(2)])
-    if np.allclose(statevector, target_bell_state) and not st.session_state.mission_complete:
-        st.session_state.mission_complete = True
-        st.balloons()
-        st.toast("BELL STATE CREATED!", icon="🎉")
+    if np.allclose(statevector, target_bell_state):
+        if not st.session_state.mission_complete:
+            st.session_state.mission_complete = True
+            st.session_state.comic_url = COMIC_URL_SUCCESS
+            st.balloons()
+            st.toast("BELL STATE CREATED!", icon="🎉")
+            st.rerun()
 
     if st.session_state.mission_complete:
-        st.success("### 🎉 Mission Complete! 🎉\nYou've successfully entangled two qubits and created a Bell State. Professor Qubit is proud!")
+        st.success("### 🎉 Mission Complete! 🎉\nYou've successfully entangled two qubits and created a Bell State.")
         if lottie_animations["success"]:
-            st_lottie(lottie_animations["success"], key="success_anim")
+            st_lottie(lottie_animations["success"], key="success_anim", height=200)

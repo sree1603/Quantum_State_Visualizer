@@ -6,7 +6,8 @@ import time
 # Import page modules from the 'pages' directory
 from pages.loader import quantum_loader
 from pages.sphere import show_glowing_sphere
-from pages import visualization, comics, contact, realms # Import all page modules
+# --- MODIFICATION: Import the new explorer page ---
+from pages import visualization, comics, contact, realms, explorer 
 
 # Page configuration
 st.set_page_config(
@@ -131,15 +132,6 @@ if 'first_load' not in st.session_state:
 # Get the current page from the URL query parameters
 page = st.query_params.get("page", None)
 
-# Determine active page for menu highlighting
-home_active = "active" if page is None else ""
-visualization_active = "active" if page == "visualization" else ""
-comics_active = "active" if page == "comics" else ""
-realms_active = "active" if page == "realms" else "" # Added for Realms
-contact_active = "active" if page == "contact" else ""
-
-
-
 # Segmented control (tab navigation) style navbar using Streamlit buttons
 st.markdown("""
 <style>
@@ -178,7 +170,7 @@ st.markdown("""
         border-radius: 2rem;
         padding: 0.5rem;
         box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-        max-width: 700px;
+        max-width: 800px; /* Increased width for new item */
         margin: 0 auto;
     }
     
@@ -218,22 +210,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-import streamlit as st
-from streamlit import session_state
-
 def set_page(new_page):
     st.query_params["page"] = new_page if new_page else None
     st.rerun()
 
+# --- MODIFICATION: Add "Explorer" to the navigation tabs ---
 tab_items = [
     ("Home", None),
     ("Visualization", "visualization"),
+    ("Explorer", "explorer"),
     ("Comics", "comics"),
     ("Realms", "realms"),
     ("Contact Us", "contact")
 ]
-
-
 
 # Create the segmented control navbar container
 st.markdown('<div class="nav-container"><div class="segmented-control">', unsafe_allow_html=True)
@@ -257,7 +246,7 @@ st.markdown('</div></div>', unsafe_allow_html=True)
 # Scrolling text bar
 st.markdown("""
 <div class="scroll-container">
-    <div class="scroll-text">✨ IT'S IN SESSION. CLICK HERE TO START WITH THE BASICS. | EXPLORE THE QUANTUM REALM | VISUALIZE QUANTUM STATES | READ QUANTUM COMICS | ⟨ψ| WELCOME TO MYRIAD |ψ⟩ | ✨</div>
+    <div class="scroll-text">✨ EXPLORE THE BLOCH SPHERE | BUILD QUANTUM CIRCUITS IN THE REALMS | VISUALIZE QUANTUM STATES | READ QUANTUM COMICS | ⟨ψ| WELCOME TO MYRIAD |ψ⟩ | ✨</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -265,10 +254,13 @@ st.markdown("""
 # Display the appropriate page based on the 'page' query parameter
 if page == "visualization":
     visualization.app()
+# --- MODIFICATION: Add a route for the new Explorer page ---
+elif page == "explorer":
+    explorer.app()
 elif page == "comics":
     comics.app()
 elif page == "realms":
-    realms.app() # Added route for the Realms game
+    realms.app()
 elif page == "contact":
     contact.app()
 else:
